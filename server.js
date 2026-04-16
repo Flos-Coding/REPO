@@ -6,6 +6,10 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+app.get("/", (req, res) => {
+    res.send("Excel License Server läuft 🚀");
+});
+
 // 🔥 EINZIGE STELLE FÜR VERSION
 const APP_VERSION = "1.0.1";
 
