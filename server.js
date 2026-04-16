@@ -1,3 +1,6 @@
+const fs = require("fs");
+const licenses = JSON.parse(fs.readFileSync("licenses.json"));
+
 const express = require("express");
 const axios = require("axios");
 const cors = require("cors");
