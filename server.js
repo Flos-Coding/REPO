@@ -19,10 +19,12 @@ const FILE_NAME = "workflow_addin.xlam";
 
 // Version API
 app.get("/version.json", (req, res) => {
+
     res.json({
         version: APP_VERSION,
-        download: "https://excel-license-server-ox2t.onrender.com/download/latest"
+        download: "https://repo-vnlk.onrender.com/download/latest"
     });
+
 });
 
 // Download Proxy (wichtig!)
