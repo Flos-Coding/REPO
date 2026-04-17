@@ -14,7 +14,7 @@ app.get("/", (req, res) => {
 });
 
 // 🔥 EINZIGE STELLE FÜR VERSION
-const APP_VERSION = "1.0.1";
+const APP_VERSION = "1.0.3";
 
 const GITHUB_USER = "Flos-Coding";
 const GITHUB_REPO = "REPO";
