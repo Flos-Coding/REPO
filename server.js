@@ -59,11 +59,9 @@ app.listen(process.env.PORT || 3000);
 // ========================
 app.post("/api/license/check", (req, res) => {
 
-    const { user, machine } = req.body;
+    const { machine } = req.body;
 
-    const key = user + "-" + machine;
-
-    const lic = licenses.find(l => l.user === key);
+    const lic = licenses.find(l => l.user === machine);
 
     if (!lic) {
         return res.json({ valid: false });
