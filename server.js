@@ -37,17 +37,16 @@ app.get("/", (req, res) => {
 // ========================
 app.post("/api/license/check", (req, res) => {
 
-    const { machine } = req.body;
+    const { key, machine } = req.body;
 
-    let lic = licenses.find(l =>
-        machine.toLowerCase().includes(l.user.toLowerCase())
-    );
+    // 🔍 Lizenz anhand KEY finden
+    let lic = licenses.find(l => l.key === key);
 
     if (!lic) {
-        return res.json({ valid: false });
+        return res.json({ valid: false, reason: "invalid_key" });
     }
 
-    // Ablauf prüfen
+    // ⏰ Ablauf prüfen
     const today = new Date();
     const exp = new Date(lic.expires);
 
@@ -55,7 +54,7 @@ app.post("/api/license/check", (req, res) => {
         return res.json({ valid: false, reason: "expired" });
     }
 
-    // Gerät prüfen
+    // 📱 Gerät prüfen
     if (!lic.devices.includes(machine)) {
 
         if (lic.devices.length >= lic.device_limit) {
@@ -63,7 +62,7 @@ app.post("/api/license/check", (req, res) => {
         }
 
         lic.devices.push(machine);
-        saveLicenses();
+        fs.writeFileSync("licenses.json", JSON.stringify(licenses, null, 2));
     }
 
     res.json({ valid: true });
