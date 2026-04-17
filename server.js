@@ -54,4 +54,30 @@ app.get("/download/latest", async (req, res) => {
 
 app.listen(process.env.PORT || 3000);
 
+// ========================
+// LICENSE CHECK
+// ========================
+app.post("/api/license/check", (req, res) => {
+
+    const { user, machine } = req.body;
+
+    const key = user + "-" + machine;
+
+    const lic = licenses.find(l => l.user === key);
+
+    if (!lic) {
+        return res.json({ valid: false });
+    }
+
+    const today = new Date();
+    const exp = new Date(lic.expires);
+
+    if (today > exp) {
+        return res.json({ valid: false });
+    }
+
+    res.json({ valid: true });
+
+});
+
 
