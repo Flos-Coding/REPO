@@ -1,6 +1,8 @@
 [
   {
-    "user": "P21968751-N746609",
+    "user": "P21968751",
     "expires": "2027-12-31"
+    "device_limit": 1,
+    "devices": []
   }
 ]
