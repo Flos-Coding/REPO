@@ -1,58 +1,36 @@
 const fs = require("fs");
-const licenses = JSON.parse(fs.readFileSync("licenses.json"));
-
 const express = require("express");
-const axios = require("axios");
 const cors = require("cors");
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.get("/", (req, res) => {
-    res.send("Excel License Server läuft 🚀");
-});
+// ========================
+// LIZENZEN LADEN
+// ========================
+let licenses = [];
 
-// 🔥 EINZIGE STELLE FÜR VERSION
-const APP_VERSION = "1.0.3";
-
-const GITHUB_USER = "Flos-Coding";
-const GITHUB_REPO = "REPO";
-const FILE_NAME = "workflow_addin.xlam";
-
-// Version API
-app.get("/version.json", (req, res) => {
-
-    res.json({
-        version: APP_VERSION,
-        download: "https://repo-vnlk.onrender.com/download/latest"
-    });
-
-});
-
-// Download Proxy (wichtig!)
-app.get("/download/latest", async (req, res) => {
+function loadLicenses() {
     try {
-        const url =
-            `https://github.com/${GITHUB_USER}/${GITHUB_REPO}` +
-            `/releases/download/v${APP_VERSION}/${FILE_NAME}`;
-
-        const response = await axios.get(url, {
-            responseType: "arraybuffer"
-        });
-
-        res.setHeader("Content-Type",
-            "application/vnd.ms-excel.addin.macroEnabled.12"
-        );
-
-        res.send(response.data);
-
-    } catch (err) {
-        res.status(500).send("Download failed");
+        licenses = JSON.parse(fs.readFileSync("licenses.json"));
+    } catch (e) {
+        licenses = [];
     }
-});
+}
 
-app.listen(process.env.PORT || 3000);
+function saveLicenses() {
+    fs.writeFileSync("licenses.json", JSON.stringify(licenses, null, 2));
+}
+
+loadLicenses();
+
+// ========================
+// TEST
+// ========================
+app.get("/", (req, res) => {
+    res.send("License Server läuft 🚀");
+});
 
 // ========================
 // LICENSE CHECK
@@ -61,21 +39,35 @@ app.post("/api/license/check", (req, res) => {
 
     const { machine } = req.body;
 
-    const lic = licenses.find(l => l.user === machine);
+    let lic = licenses.find(l =>
+        machine.toLowerCase().includes(l.user.toLowerCase())
+    );
 
     if (!lic) {
         return res.json({ valid: false });
     }
 
+    // Ablauf prüfen
     const today = new Date();
     const exp = new Date(lic.expires);
 
     if (today > exp) {
-        return res.json({ valid: false });
+        return res.json({ valid: false, reason: "expired" });
+    }
+
+    // Gerät prüfen
+    if (!lic.devices.includes(machine)) {
+
+        if (lic.devices.length >= lic.device_limit) {
+            return res.json({ valid: false, reason: "device_limit" });
+        }
+
+        lic.devices.push(machine);
+        saveLicenses();
     }
 
     res.json({ valid: true });
 
 });
 
-
+app.listen(process.env.PORT || 3000);
