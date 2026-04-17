@@ -1,0 +1,9 @@
+1. Drücke Windows-Taste + R
+2. Tippe ein: regedit
+3. ENTER
+4. Navigiere zu:
+
+HKEY_CURRENT_USER
+  └── Software
+      └── FLO
+          └── LicenseKey
