@@ -12,8 +12,9 @@ app.use(express.json());
 // ========================
 const PORT = process.env.PORT || 3000;
 
-const MAIL_USER = "flo.koller74@gmail.com";
-const MAIL_PASS = "G1!jacifloL";
+const MAIL_USER = process.env.MAIL_USER;
+const MAIL_PASS = process.env.MAIL_PASS;
+const ADMIN_KEY = process.env.ADMIN_KEY;
 
 // ========================
 // MAIL SETUP
@@ -53,7 +54,20 @@ app.get("/", (req, res) => {
 });
 
 // ========================
-// 🔑 KEY GENERATOR
+// 🔒 ADMIN SCHUTZ
+// ========================
+function checkAdmin(req, res, next) {
+    const key = req.headers["x-api-key"];
+
+    if (key !== ADMIN_KEY) {
+        return res.status(403).json({ error: "Forbidden" });
+    }
+
+    next();
+}
+
+// ========================
+// 🔑 KEY GENERATOR (EINDEUTIG)
 // ========================
 function generateKey() {
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -66,13 +80,19 @@ function generateKey() {
         return s;
     }
 
-    return "FLO-" + block(5) + "-" + block(5) + "-" + block(5);
+    let key;
+
+    do {
+        key = "FLO-" + block(5) + "-" + block(5) + "-" + block(5);
+    } while (licenses.find(l => l.key === key));
+
+    return key;
 }
 
 // ========================
 // 📧 LIZENZ ERSTELLEN
 // ========================
-app.post("/api/license/create", async (req, res) => {
+app.post("/api/license/create", checkAdmin, (req, res) => {
 
     const { name, email, expires, device_limit } = req.body;
 
@@ -95,28 +115,6 @@ app.post("/api/license/create", async (req, res) => {
     licenses.push(lic);
     saveLicenses();
 
-    // 📧 Mail senden
-    try {
-        await transporter.sendMail({
-            from: MAIL_USER,
-            to: email,
-            subject: "Dein Excel Add-In Zugang",
-            text: `
-Hallo ${name},
-
-dein Lizenzschlüssel:
-
-${key}
-
-Bitte lade die Installation herunter und starte die Update-Datei.
-
-Viele Grüße
-`
-        });
-    } catch (err) {
-        console.log("Mail Fehler:", err);
-    }
-
     res.json({ success: true, key });
 
 });
@@ -134,12 +132,11 @@ app.post("/api/license/check", (req, res) => {
         return res.json({ valid: false, reason: "invalid_key" });
     }
 
-    // Ablauf prüfen
     if (new Date() > new Date(lic.expires)) {
         return res.json({ valid: false, reason: "expired" });
     }
 
-    // 🔥 ERSTE AKTIVIERUNG
+    // Erste Aktivierung
     if (!lic.activated) {
         lic.activated = true;
         lic.devices.push(machine);
@@ -147,7 +144,7 @@ app.post("/api/license/check", (req, res) => {
         return res.json({ valid: true });
     }
 
-    // Geräte prüfen
+    // Geräteprüfung
     if (!lic.devices.includes(machine)) {
         return res.json({ valid: false, reason: "device_limit" });
     }
@@ -159,14 +156,14 @@ app.post("/api/license/check", (req, res) => {
 // ========================
 // 📋 ALLE LIZENZEN
 // ========================
-app.get("/api/licenses", (req, res) => {
+app.get("/api/licenses", checkAdmin, (req, res) => {
     res.json(licenses);
 });
 
 // ========================
 // 🗑️ LIZENZ LÖSCHEN
 // ========================
-app.post("/api/license/delete", (req, res) => {
+app.post("/api/license/delete", checkAdmin, (req, res) => {
 
     const { key } = req.body;
 
@@ -178,9 +175,46 @@ app.post("/api/license/delete", (req, res) => {
 });
 
 // ========================
+// 📧 MAIL AN USER
+// ========================
+app.post("/api/sendmail", checkAdmin, async (req, res) => {
+
+    const { name, email, key } = req.body;
+
+    try {
+        await transporter.sendMail({
+            from: MAIL_USER,
+            to: email,
+            subject: "Dein Excel Add-In Zugang",
+            text: `
+Hallo ${name},
+
+dein Lizenzschlüssel:
+
+${key}
+
+Installationsanleitung:
+1. Add-In installieren
+2. Excel starten
+3. Key eingeben
+
+Viel Erfolg!
+`
+        });
+
+        res.json({ success: true });
+
+    } catch (err) {
+        console.log(err);
+        res.status(500).json({ error: "Mail Fehler", detail: err.message });
+    }
+
+});
+
+// ========================
 // 📧 ALLE EMAILS
 // ========================
-app.get("/api/emails", (req, res) => {
+app.get("/api/emails", checkAdmin, (req, res) => {
     res.json(licenses.map(l => l.email));
 });
 
