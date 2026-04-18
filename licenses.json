@@ -1,10 +1,11 @@
 [
   {
-    "key": "FLO-7X9K2-ABCD1-92KLM",
-    "customer": "Florian K.",
-    "email": "mustermann@mail.at",
-    "expires": "2099-12-31",
+    "key": "FLO-AB12C-XY789-Z9KLM",
+    "name": "Max Mustermann",
+    "email": "max@mail.com",
+    "expires": "2027-12-31",
     "device_limit": 1,
+    "activated": false,
     "devices": []
   }
 ]
